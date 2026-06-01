@@ -138,6 +138,23 @@ Ctrl+C en la terminal donde se ejecuta npm run dev
 | Customer 4 | customer4@shop.com | pass1234 |
 | Customer 5 | customer5@shop.com | pass1234 |
 
+## Tarjetas de prueba Stripe / Stripe Test Cards
+
+Estas tarjetas solo funcionan con las API keys de prueba (sandbox). Usar cualquier fecha futura como vencimiento y cualquier valor en los demas campos del formulario.
+
+| Marca | Numero | CVC | Vencimiento |
+|-------|--------|-----|-------------|
+| Visa | 4242 4242 4242 4242 | Any 3 digits | Any future date |
+| Visa (debit) | 4000 0566 5566 5556 | Any 3 digits | Any future date |
+| Mastercard | 5555 5555 5555 4444 | Any 3 digits | Any future date |
+| Mastercard (2-series) | 2223 0031 2200 3222 | Any 3 digits | Any future date |
+| Mastercard (debit) | 5200 8282 8282 8210 | Any 3 digits | Any future date |
+| American Express | 3782 822463 10005 | Any 4 digits | Any future date |
+| Discover | 6011 1111 1111 1117 | Any 3 digits | Any future date |
+| Diners Club | 3056 9300 0902 0004 | Any 3 digits | Any future date |
+| JCB | 3566 0020 2036 0505 | Any 3 digits | Any future date |
+| UnionPay | 6200 0000 0000 0005 | Any 3 digits | Any future date |
+
 ## Configuracion de red / Network Configuration
 Esta aplicacion corre en **localhost** directamente en la maquina Windows, no requiere configuracion de red adicional ni NAT port forwarding.
 
