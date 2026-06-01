@@ -36,8 +36,9 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next({ request: { headers: requestHeaders } });
   }
 
-  // Customer routes protection
-  if (pathname.startsWith('/cart') || pathname.startsWith('/orders') || pathname.startsWith('/checkout')) {
+  // Customer routes protection — success/cancel are public Stripe return URLs
+  const isStripeReturn = pathname === '/checkout/success' || pathname === '/checkout/cancel';
+  if (!isStripeReturn && (pathname.startsWith('/cart') || pathname.startsWith('/orders') || pathname.startsWith('/checkout'))) {
     const payload = await getTokenPayload(request);
     if (!payload) {
       return NextResponse.redirect(new URL('/login', request.url));
