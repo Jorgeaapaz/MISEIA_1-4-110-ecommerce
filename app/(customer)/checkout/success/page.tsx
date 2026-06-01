@@ -1,7 +1,54 @@
 import Link from 'next/link';
+import Stripe from 'stripe';
+import { ObjectId } from 'mongodb';
 import Header from '@/app/components/Header';
+import { getDb } from '@/lib/db';
 
-export default function CheckoutSuccessPage() {
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
+  apiVersion: '2026-03-25.dahlia',
+});
+
+async function fulfillOrder(sessionId: string): Promise<void> {
+  let session: Stripe.Checkout.Session;
+  try {
+    session = await stripe.checkout.sessions.retrieve(sessionId);
+  } catch {
+    return;
+  }
+
+  if (session.payment_status !== 'paid') return;
+
+  const orderId = session.metadata?.orderId;
+  if (!orderId) return;
+
+  const db = await getDb();
+  const order = await db.collection('orders').findOne({ _id: new ObjectId(orderId) });
+
+  if (!order || order.status !== 'pending') return;
+
+  await db.collection('orders').updateOne(
+    { _id: new ObjectId(orderId) },
+    { $set: { status: 'paid', stripeSessionId: session.id } }
+  );
+
+  for (const item of order.items) {
+    await db.collection('products').updateOne(
+      { _id: item.productId },
+      { $inc: { stock: -item.qty } }
+    );
+  }
+}
+
+export default async function CheckoutSuccessPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ session_id?: string }>;
+}) {
+  const { session_id } = await searchParams;
+  if (session_id) {
+    await fulfillOrder(session_id);
+  }
+
   return (
     <>
       <Header />
