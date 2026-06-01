@@ -215,6 +215,8 @@ curl -X POST http://localhost:3000/api/cart \
 | Next.js 16 renombro `middleware.ts` a `proxy.ts` | Se uso la nueva convencion: archivo `proxy.ts` en la raiz con funcion exportada `proxy()` |
 | `params` en route handlers ahora es una Promise en Next.js 16 | Se uso `await params` en todos los route handlers con parametros dinamicos |
 | `cookies()` de `next/headers` ahora es async en Next.js 16 | Se uso `await cookies()` en la funcion `getSession()` |
+| Despues de pagar con Stripe, el browser mostraba `"Unsafe attempt to load URL … from frame with URL chrome-error://chromewebdata/"` | El proxy protegía `/checkout/success` y `/checkout/cancel`. Stripe Checkout usa iframes internos que hacen requests cross-site; con `SameSite=Lax` la cookie no se incluye en esos requests, el proxy redirigía a `/login` y el frame fallaba. Solución: eximir `/checkout/success` y `/checkout/cancel` de la proteccion de auth en `proxy.ts` — son paginas publicas de confirmacion sin datos sensibles. |
+| Las ordenes permanecian en estado `pending` tras pagar exitosamente con Stripe | Los webhooks de Stripe requieren una URL publica accesible desde internet; en desarrollo local (`localhost`) Stripe no puede alcanzar el endpoint `/api/stripe/webhook`. Solucion: la pagina `/checkout/success` ahora es un Server Component `async` que, al cargarse con `?session_id=`, llama a la Stripe API para verificar `payment_status === 'paid'` y actualiza el orden en MongoDB. La actualizacion es idempotente (solo actua si `status === 'pending'`). El webhook sigue siendo el camino de produccion. |
 
 ## Resultados y conclusiones / Results & Conclusions
 
@@ -227,7 +229,7 @@ curl -X POST http://localhost:3000/api/cart \
 
 ### Que falta para produccion
 - **Testing**: No se escribieron tests unitarios ni e2e
-- **Stripe webhook real**: El `STRIPE_WEBHOOK_SECRET` es un placeholder — para produccion se necesita configurar con `stripe listen --forward-to localhost:3000/api/stripe/webhook`
+- **Stripe webhook en produccion**: El `STRIPE_WEBHOOK_SECRET` es un placeholder. En produccion, registrar el endpoint en el Stripe Dashboard y actualizar la variable. En desarrollo local se puede usar `stripe listen --forward-to localhost:3000/api/stripe/webhook` con la Stripe CLI como alternativa al fallback del success page.
 - **Validacion**: Se podria agregar Zod para validacion de inputs en API routes
 - **Paginacion**: Las listas de productos/ordenes/clientes no tienen paginacion
 - **MongoDB**: Se necesita tener MongoDB corriendo antes de ejecutar la app
