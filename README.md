@@ -120,6 +120,53 @@ return NextResponse.json({ url: session.url });
 
 ---
 
+## Architecture
+
+```mermaid
+graph TD
+    Browser["Browser (React 19)"]
+
+    subgraph NextJS["Next.js 16 App Router"]
+        Proxy["proxy.ts\n(JWT middleware)"]
+        subgraph Pages["Server Components"]
+            Public["(public)\ncatalog · product · login · register"]
+            Customer["(customer)\ncart · orders · checkout"]
+            Admin["(admin)\ndashboard · products · orders · customers"]
+        end
+        subgraph API["API Routes /api/**"]
+            AuthAPI["auth/login · logout · register"]
+            CartAPI["cart (GET/POST/DELETE)"]
+            CheckoutAPI["checkout (POST)"]
+            WebhookAPI["stripe/webhook (POST)"]
+            AdminAPI["admin/products · admin/orders"]
+        end
+    end
+
+    subgraph Lib["lib/"]
+        DB["db.ts\n(MongoDB singleton)"]
+        Auth["auth.ts\n(JWT create/verify)"]
+        Types["types.ts\n(interfaces)"]
+    end
+
+    MongoDB[("MongoDB 7\necommerce db")]
+    Stripe["Stripe\nCheckout + Webhooks"]
+
+    Browser -->|every request| Proxy
+    Proxy -->|role: admin| Admin
+    Proxy -->|role: customer| Customer
+    Proxy -->|public| Public
+    Proxy -->|unauthenticated| Browser
+
+    Pages -->|direct DB read\nServer Components| DB
+    Browser -->|fetch| API
+    API --> DB
+    API --> Auth
+    CheckoutAPI -->|create session| Stripe
+    Stripe -->|checkout.session.completed| WebhookAPI
+    WebhookAPI -->|update order + decrement stock| DB
+    DB <--> MongoDB
+```
+
 ## Getting Started
 
 ### Prerequisites
@@ -140,18 +187,11 @@ npm install
 
 ### Configure environment variables
 
-Create `.env.local` at the project root:
-
-```env
-MONGODB_URI=mongodb://localhost:27017
-MONGODB_DB=ecommerce
-AUTH_SECRET=<random 32-char string>
-NEXT_PUBLIC_BASE_URL=http://localhost:3000
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_<your_key>
-STRIPE_PUBLISHABLE_KEY=pk_test_<your_key>
-STRIPE_SECRET_KEY=sk_test_<your_key>
-STRIPE_WEBHOOK_SECRET=whsec_<your_webhook_secret>
+```bash
+cp .env.example .env.local
 ```
+
+Then edit `.env.local` with your real values (see `.env.example` for descriptions of each variable).
 
 ### Seed the database
 
