@@ -376,3 +376,12 @@ Registra el webhook en el [Dashboard de Stripe](https://dashboard.stripe.com/web
 | `products` | `_id`, `name`, `description`, `price` (centavos), `stock`, `category`, `active` |
 | `orders` | `_id`, `customerId`, `items [{productId, name, qty, unitPrice}]`, `total`, `status` (`pending`\|`paid`\|`shipped`\|`cancelled`), `stripeSessionId`, `createdAt` |
 | `carts` | `_id`, `customerId`, `items [{productId, name, qty, unitPrice}]`, `updatedAt` |
+
+---
+
+## Updates — 2026-06-27
+
+- `docs/RETROSPECTIVE-2026-06-27.md` added — full English session retrospective covering compliance evaluation, PERT execution, all bugs found and fixed (Stripe lazy init, `force-dynamic`, Traefik backtick label stripping, GitLab `builds_access_level`, GitHub SSH secrets), and recommendations for future sessions.
+- `.github/workflows/ci-cd.yml` and `.gitlab-ci.yml` updated — deploy step now writes a shell script to the VM before executing it, preventing Traefik `Host()` label backtick stripping through SSH heredocs.
+- Both GitHub Actions and GitLab CI pipelines fully green (lint → test → build → deploy).
+- Production site `https://ecommerce.deviaaps.com` confirmed HTTP 200.
