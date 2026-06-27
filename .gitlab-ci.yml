@@ -45,39 +45,39 @@ deploy:
     - mkdir -p ~/.ssh && chmod 700 ~/.ssh
     - ssh-keyscan 34.174.56.186 >> ~/.ssh/known_hosts
   script:
+    # Write deploy script to VM, then execute it.
+    # Using a script file avoids backtick-in-heredoc shell escaping issues
+    # with the Traefik Host() label.
     - |
-      ssh gcvmuser@34.174.56.186 << ENDSSH
-        set -e
-        APP_DIR=~/MISEIA110_ecommerce
-        if [ ! -d "\$APP_DIR" ]; then
-          git clone https://github.com/Jorgeaapaz/MISEIA_1-4-110-ecommerce.git "\$APP_DIR"
-        else
-          cd "\$APP_DIR" && git pull origin main
-        fi
-        cd "\$APP_DIR"
-        docker build -t ecommerce:latest .
-        docker stop ecommerce 2>/dev/null || true
-        docker rm ecommerce 2>/dev/null || true
-        docker run -d \
-          --name ecommerce \
-          --network miseia-net \
-          --restart unless-stopped \
-          -e MONGODB_URI="$MONGODB_URI" \
-          -e MONGODB_DB="$MONGODB_DB" \
-          -e AUTH_SECRET="$AUTH_SECRET" \
-          -e NEXT_PUBLIC_BASE_URL="$NEXT_PUBLIC_BASE_URL" \
-          -e NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY="$NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY" \
-          -e STRIPE_PUBLISHABLE_KEY="$STRIPE_PUBLISHABLE_KEY" \
-          -e STRIPE_SECRET_KEY="$STRIPE_SECRET_KEY" \
-          -e STRIPE_WEBHOOK_SECRET="$STRIPE_WEBHOOK_SECRET" \
-          -l "traefik.enable=true" \
-          -l "traefik.http.routers.ecommerce.rule=Host(\`ecommerce.deviaaps.com\`)" \
-          -l "traefik.http.routers.ecommerce.entrypoints=websecure" \
-          -l "traefik.http.routers.ecommerce.tls=true" \
-          -l "traefik.http.routers.ecommerce.tls.certresolver=cloudflare" \
-          -l "traefik.http.services.ecommerce.loadbalancer.server.port=30001" \
-          ecommerce:latest
-        docker ps --filter name=ecommerce --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
-      ENDSSH
+      ssh gcvmuser@34.174.56.186 "cat > /tmp/deploy_ecommerce.sh" << 'SCRIPT'
+      #!/bin/bash
+      set -e
+      APP_DIR=~/MISEIA110_ecommerce
+      if [ ! -d "$APP_DIR" ]; then
+        git clone https://github.com/Jorgeaapaz/MISEIA_1-4-110-ecommerce.git "$APP_DIR"
+      else
+        cd "$APP_DIR" && git pull origin main
+      fi
+      cd "$APP_DIR"
+      docker build -t ecommerce:latest .
+      docker stop ecommerce 2>/dev/null || true
+      docker rm ecommerce 2>/dev/null || true
+      TRAEFIK_RULE='traefik.http.routers.ecommerce.rule=Host(`ecommerce.deviaaps.com`)'
+      docker run -d \
+        --name ecommerce \
+        --network miseia-net \
+        --restart unless-stopped \
+        --env-file ~/MISEIA110_ecommerce/.env.production \
+        --label traefik.enable=true \
+        --label "$TRAEFIK_RULE" \
+        --label traefik.http.routers.ecommerce.entrypoints=websecure \
+        --label traefik.http.routers.ecommerce.tls=true \
+        --label traefik.http.routers.ecommerce.tls.certresolver=cloudflare \
+        --label traefik.http.services.ecommerce.loadbalancer.server.port=30001 \
+        ecommerce:latest
+      echo "Deploy complete — container status:"
+      docker ps --filter name=ecommerce --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+      SCRIPT
+    - ssh gcvmuser@34.174.56.186 "bash /tmp/deploy_ecommerce.sh"
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
