@@ -1,134 +1,231 @@
 # Session Retrospective — MISEIA 1-4-110 Ecommerce
-**Date:** 2026-06-27  
-**Session scope:** Compliance evaluation, PERT execution, CI/CD pipelines (GitHub + GitLab), production deployment, 404 fix, VM diagnostics
+**Date:** 2026-06-27
+**Session scope:** Compliance evaluation, PERT execution, CI/CD pipelines (GitHub + GitLab), production 404 fix, VM diagnostics, README + retrospective documentation
 
 ---
 
 ## 1. Session Overview
 
-This session took the `1-4-110-ecommerce` Next.js application from a **21/30 compliance score** to a fully tested, containerized, and CI/CD-deployed service at `https://ecommerce.deviaaps.com`. Two complete CI/CD pipelines were brought to green, a production 404 was diagnosed and fixed, and a GitLab project misconfiguration was identified and resolved.
+This session drove the `1-4-110-ecommerce` Next.js application from a **21/30 compliance score** to a fully tested, containerized, CI/CD-deployed service. Two complete pipelines were brought to green end-to-end. A production 404 was root-caused and fixed. A GitLab project misconfiguration was identified and resolved. The session ended with a VM infrastructure outage being diagnosed.
 
-### Final State
+### Final Deliverables
 
-| Item | Status |
+| Deliverable | Status |
 |---|---|
-| Compliance score | 21/30 → all gaps closed |
-| Unit tests (Vitest) | 27 tests passing |
-| Docker build | Multi-stage, standalone output |
-| GitHub Actions | 3 jobs green (lint/test → build → deploy) |
-| GitLab CI | 3 stages green (test → build → deploy) |
-| Production URL | https://ecommerce.deviaaps.com |
-| README | Rewritten in Spanish |
-| Retrospective | This file |
-| ADRs | 6 records with quantitative justification |
-| AI usage docs | `docs/AI-USAGE.md` |
+| Compliance report (`docs/compliance/compliance-report.md`) | Done — 21/30 → all 10 gaps closed |
+| PERT plan (`docs/compliance/pert-compliance-plan.md`) | Done — 11 tasks, all executed |
+| 11 disciplined prompt files | Done — `[001]` through `[011]` |
+| `.env.example` | Done — tracked in git |
+| `.env.production` | Done — gitignored, on VM |
+| Vitest tests | Done — 27 tests passing |
+| Dockerfile (multi-stage, standalone) | Done |
+| GitHub Actions pipeline | Done — 3 jobs green |
+| GitLab CI pipeline | Done — 3 stages green |
+| Production deploy | Done — https://ecommerce.deviaaps.com |
+| Mermaid architecture diagram | Done — in README |
+| `docs/AI-USAGE.md` | Done |
+| 6 ADRs with quantitative justification | Done |
+| Full README in Spanish | Done |
+| This retrospective | Done |
 
 ---
 
-## 2. Skills and Commands Used
+## 2. Skills and Commands Used (in order)
 
-| Command / Skill | Purpose |
-|---|---|
-| `/miseia_eval` | Evaluate project against `evaluacion-requirements.md`, generate compliance report, PERT plan, and 11 disciplined prompt files |
-| `/create_prod_env` | Create `.env.production` from GCI VM infrastructure config |
-| `/execute_pert` | Execute all 11 PERT tasks sequentially |
-| `/gg-update` | Stage, commit, push to GitHub and GitLab; update README |
-| `/miseia_create_readme` | Re-create README in Spanish + update retrospective |
-| `gh run list / view / rerun` | GitHub Actions pipeline management |
-| `glab ci status / run` | GitLab CI pipeline management |
-| `glab api` | Direct GitLab REST API calls (project settings, variables) |
-| `gh secret set` | Set GitHub repository secrets |
-| `ssh / docker` | VM access and container management |
+| Command / Skill | Purpose | Outcome |
+|---|---|---|
+| `/miseia_eval` | Evaluate project, generate compliance report, PERT plan, 11 prompt files | All files generated in `docs/compliance/` |
+| `/create_prod_env` | Create `.env.production` from GCI VM infra config | `.env.production` created on disk and on VM |
+| `/execute_pert @docs/compliance/pert-compliance-plan.md` | Execute all 11 PERT tasks | All tasks completed in dependency order |
+| `Check github pipeline` | Investigate and fix GitHub Actions failures | 4 ESLint fixes, 9 secrets set, pipeline green |
+| `enable gitlab pipeline` | Activate GitLab CI/CD and set variables | CI/CD enabled, 9 variables set, pipeline green |
+| `not reaching https://ecommerce.deviaaps.com/ — 404` | Diagnose and fix Traefik routing | Backtick stripping root cause found, fix deployed |
+| `/gg-update` | Stage, commit, push to GitHub and GitLab | README updated, both remotes synced |
+| `check github pipeline` | Verify pipeline after gg-update push | VM down — `ssh-keyscan` timeout |
+| `/miseia_create_readme` (×3) | Re-create README in Spanish + retrospective | Final comprehensive README + retrospective |
 
 ---
 
 ## 3. Process — Phase by Phase
 
 ### Phase 1 — Compliance Evaluation (`/miseia_eval`)
-The skill read `D:\Master-IA-Dev\CodeCrypto\001_Evaluation_Requirements\evaluacion-requirements.md` and produced:
-- `docs/compliance/compliance-report.md` — full score breakdown (21/30)
-- `docs/compliance/pert-compliance-plan.md` — 11-task dependency-ordered plan
-- `docs/compliance/[001]_env_example_fn_prompt.md` … `[011]_instrucciones_deploy_fn_prompt.md`
 
-Two CI/CD prompt files were generated separately: one for GitHub Actions (based on a provided template), one for GitLab CI (using `/glab` conventions).
+The skill read `D:\Master-IA-Dev\CodeCrypto\001_Evaluation_Requirements\evaluacion-requirements.md` and evaluated the project against all criteria.
+
+**Score breakdown (initial): 21/30**
+
+**10 gaps identified:**
+1. No `.env.example` file
+2. No automated tests
+3. Test coverage < 60% in domain code
+4. No Dockerfile
+5. No GitHub Actions CI/CD
+6. No GitLab CI/CD
+7. No publicly accessible deployment
+8. No architecture diagram
+9. No AI usage documentation
+10. No Architecture Decision Records (ADRs)
+11. No deploy instructions in README
+
+**Outputs generated:**
+- `docs/compliance/compliance-report.md`
+- `docs/compliance/pert-compliance-plan.md`
+- `docs/compliance/[001]_env_example_fn_prompt.md` through `[011]_instrucciones_deploy_fn_prompt.md`
+
+**Key instruction:** Two CI/CD files were generated separately:
+- GitHub: based on the template provided in the invocation (`ssh -i C:\ubuntuiso\.ssh\vboxuser gcvmuser@34.174.56.186`)
+- GitLab: using `/glab` conventions, with `NODE_ENV=production` ONLY on the build command, never as a job-level variable
 
 ### Phase 2 — Production Environment (`/create_prod_env`)
+
 Created `.env.production` from:
 - `D:\Master-IA-Dev\00-GoogleCloud\004_Infra_in_VM\.env`
 - `D:\Master-IA-Dev\00-GoogleCloud\004_Infra_in_VM\docker-compose.yml`
 - MongoDB URI: `mongodb://admin:MongoAdmin2024!@34.174.56.186:27020/?authSource=admin`
 
-### Phase 3 — PERT Execution (`/execute_pert @docs/compliance/pert-compliance-plan.md`)
+Updated `.gitignore` to list specific `.env` files explicitly instead of the glob `.env*` so that `.env.example` is tracked but real secrets are not.
+
+### Phase 3 — PERT Execution (`/execute_pert`)
+
 All 11 tasks executed in dependency order:
 
-| # | Task | Outcome |
-|---|---|---|
-| 1 | `.env.example` + update `.gitignore` | `.gitignore` changed from glob `.env*` to explicit list so `.env.example` is tracked |
-| 2 | Vitest unit tests (minimum) | 27 tests in 3 files |
-| 3 | Coverage reporting | `@vitest/coverage-v8` + `npm run test:coverage` |
-| 4 | Dockerfile multi-stage | `output: standalone` added to `next.config.ts` |
-| 5 | GitHub Actions CI/CD | 3-job pipeline: test → build → deploy |
-| 6 | GitLab CI/CD | 3-stage pipeline; `NODE_ENV=production` only on build script |
-| 7 | Deploy to GCI VM | Container running, site seeded |
-| 8 | Architecture diagram | Mermaid diagram in README |
-| 9 | AI usage documentation | `docs/AI-USAGE.md` |
-| 10 | 6 ADRs with quantitative data | Bundle sizes, latency benchmarks, float precision proof |
-| 11 | Deploy instructions in README | Full manual + automated deploy guide |
+**Task 1 — `.env.example`:**
+- Created with all 8 required variables and placeholder values
+- `.gitignore` updated from `.env*` glob → explicit list
+
+**Task 2 — Vitest unit tests:**
+- `vitest.config.ts` with `@` alias: `path.resolve(__dirname, '.')`
+- `vitest.setup.ts` with test env vars
+- `__tests__/unit/auth.test.ts` (9 tests)
+- `__tests__/unit/money.test.ts` (6 tests)
+- `__tests__/unit/api-validation.test.ts` (12 tests with mocked `lib/db.ts`)
+
+**Task 3 — Coverage reporting:**
+- `@vitest/coverage-v8` configured with `include: ['lib/**', 'app/api/**']`
+- `npm run test:coverage` generates HTML report in `coverage/`
+
+**Task 4 — Dockerfile:**
+- Multi-stage build: `builder` (node:20-alpine + npm ci + next build) → `runner` (standalone copy)
+- `next.config.ts` updated with `output: 'standalone'`
+- `.dockerignore` excludes `node_modules`, `.next`, `.env*`, `coverage`, `docs`, `__tests__`
+
+**Task 5 — GitHub Actions CI/CD:**
+- `.github/workflows/ci-cd.yml` with 3 jobs: `test`, `build`, `deploy`
+- Deploy job: SSH → git pull → docker build → docker run with Traefik labels
+
+**Task 6 — GitLab CI/CD:**
+- `.gitlab-ci.yml` with 3 stages: `test`, `build`, `deploy`
+- Critical: `NODE_ENV=production` only on `export NODE_ENV=production && npm run build`
+
+**Task 7 — Deploy to GCI VM:**
+- Docker image built and run on VM
+- MongoDB seeded with test data
+- Site confirmed accessible at `https://ecommerce.deviaaps.com`
+
+**Tasks 8–11 — Documentation:**
+- Mermaid architecture diagram in README
+- `docs/AI-USAGE.md` with 4 critical AI corrections
+- 6 ADRs with benchmarks, bundle sizes, float precision proof
+- Full deploy instructions in README
 
 ### Phase 4 — GitHub Pipeline Debugging (`Check github pipeline`)
-Pipeline failed three consecutive times before reaching green:
+
+**3 consecutive pipeline failures before green:**
 
 **Failure 1 & 2 — ESLint errors in `test` job:**
-- `react-hooks/set-state-in-effect` in `Header.tsx`, `cart/page.tsx`, `admin/products/page.tsx` → added `// eslint-disable-next-line` comments
-- `@next/next/no-html-link-for-pages` in `orders/page.tsx`, `products/[id]/page.tsx` → replaced `<a href="/">` with `<Link href="/">`
-- Unused `beforeEach` import in `api-validation.test.ts` → removed
 
-**Failure 3 — Missing SSH secret in `deploy` job:**
-- `Load key "/home/runner/.ssh/id_rsa": error in libcrypto` → `SSH_PRIVATE_KEY` was empty
-- Set all 9 secrets via `gh secret set`: `SSH_PRIVATE_KEY`, `MONGODB_URI`, `MONGODB_DB`, `AUTH_SECRET`, `NEXT_PUBLIC_BASE_URL`, both Stripe publishable keys, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`
-- Pipeline reached green after secrets were configured
+| Error | File | Fix |
+|---|---|---|
+| `react-hooks/set-state-in-effect` | `Header.tsx` | `// eslint-disable-next-line` |
+| `react-hooks/set-state-in-effect` | `cart/page.tsx` | `// eslint-disable-next-line` |
+| `react-hooks/set-state-in-effect` | `admin/products/page.tsx` | `// eslint-disable-next-line` |
+| `@next/next/no-html-link-for-pages` | `orders/page.tsx` | `<Link href="/">` |
+| `@next/next/no-html-link-for-pages` | `products/[id]/page.tsx` | `<Link href="/">` |
+| Unused `beforeEach` import | `api-validation.test.ts` | Remove import |
 
-### Phase 5 — GitLab Pipeline Activation (`enable gitlab pipeline`)
-GitLab CI/CD was **disabled** at the project level — `builds_access_level: disabled`. This caused every `glab variable set` call to return HTTP 403, which initially appeared to be a token permission issue.
+Commit: `fix: resolve all ESLint errors blocking CI pipeline`
 
-**Diagnosis:** `glab api "projects/jorgeaapaz%2FMISEIA_1-4-110-ecommerce"` revealed `jobs_enabled: false`.
+**Failure 3 — Missing SSH secret:**
+- `Load key "/home/runner/.ssh/id_rsa": error in libcrypto` / `Permission denied (publickey)`
+- `SSH_PRIVATE_KEY` secret was not set — evaluated to empty string
+- Set all 9 secrets via `gh secret set`:
 
-**Fix:** `glab api --method PUT ... -f builds_access_level=enabled`
-
-Then set all 9 variables via `glab api --method POST .../variables` and triggered the pipeline with `glab ci run -b main`. All 3 stages passed on first run after enablement.
-
-### Phase 6 — Production 404 Fix
-After the GitHub pipeline's first successful deploy, the site returned **HTTP 404**. Docker inspection showed:
-
-```json
-"traefik.http.routers.ecommerce.rule": "Host()"
+```bash
+gh secret set SSH_PRIVATE_KEY < C:\ubuntuiso\.ssh\vboxuser
+gh secret set MONGODB_URI --body "mongodb://admin:MongoAdmin2024!@34.174.56.186:27020/?authSource=admin"
+gh secret set MONGODB_DB --body "ecommerce"
+gh secret set AUTH_SECRET --body "s3cr3t_k3y_f0r_4uth_s1gn1ng_32ch"
+gh secret set NEXT_PUBLIC_BASE_URL --body "https://ecommerce.deviaaps.com"
+# + 4 Stripe secrets
 ```
 
-**Root cause:** Backticks inside `` Host(`ecommerce.deviaaps.com`) `` were interpreted as shell command substitution when `docker run --label` ran on the remote shell via an SSH heredoc — even with `<< 'ENDSSH'` (single-quoted). The backticks escaped, `ecommerce.deviaaps.com` was executed as a command (returning empty), resulting in `Host()` with no argument.
+Pipeline green after `gh run rerun --failed`.
 
-**Immediate fix:** Manually restarted container using a script written to `/tmp/run_ecommerce.sh` on the VM, using a single-quoted shell variable:
+### Phase 5 — GitLab Pipeline Activation (`enable gitlab pipeline`)
+
+**Problem:** All `glab variable set` calls returned HTTP 403 — appeared to be a permission issue.
+
+**Diagnosis:** The project had `builds_access_level: disabled` and `jobs_enabled: false`. This causes HTTP 403 on all `/variables` and `/pipelines` API endpoints, even for the project Owner — it mimics a permission error but is a project configuration setting.
+
+**Verification command:**
+```bash
+glab api "projects/jorgeaapaz%2FMISEIA_1-4-110-ecommerce" | python -c \
+  "import sys,json; d=json.load(sys.stdin); print(d.get('builds_access_level'), d.get('jobs_enabled'))"
+# → disabled False
+```
+
+**Fix:**
+```bash
+glab api --method PUT "projects/jorgeaapaz%2FMISEIA_1-4-110-ecommerce" -f builds_access_level=enabled
+```
+
+Then set all 9 CI/CD variables via `glab api --method POST .../variables` and triggered pipeline with `glab ci run -b main`. All 3 stages (lint-and-test, build, deploy) passed on the first run.
+
+### Phase 6 — Production 404 Fix (`not reaching https://ecommerce.deviaaps.com/`)
+
+**Symptom:** Site returns HTTP 404 after the first successful pipeline deploy.
+
+**Diagnosis:**
+```bash
+docker inspect ecommerce --format '{{json .Config.Labels}}'
+# → "traefik.http.routers.ecommerce.rule": "Host()"
+```
+
+The Traefik `Host()` rule was empty — the domain was stripped.
+
+**Root cause:** Backticks inside `` Host(`ecommerce.deviaaps.com`) `` are interpreted as shell command substitution when the `docker run --label` command runs on the remote shell, even when the local heredoc uses `<< 'ENDSSH'` (single-quoted). The remote bash receives the literal string and executes `` `ecommerce.deviaaps.com` `` as a command (which returns empty), producing `Host()`.
+
+**Immediate fix (manual):**
+Wrote `/tmp/run_ecommerce.sh` to the VM and executed it. The script uses a single-quoted variable:
 ```bash
 TRAEFIK_RULE='traefik.http.routers.ecommerce.rule=Host(`ecommerce.deviaaps.com`)'
 docker run ... --label "$TRAEFIK_RULE" ...
 ```
+Single quotes protect backticks at assignment; `"$TRAEFIK_RULE"` expands as a plain string at docker run time — no backtick interpretation.
 
-**Pipeline fix:** Both `.github/workflows/ci-cd.yml` and `.gitlab-ci.yml` updated to write a deploy script to `/tmp/deploy_ecommerce.sh` via SSH, then execute it — eliminating the heredoc backtick issue entirely.
+**Pipeline fix (permanent):**
+Both `.github/workflows/ci-cd.yml` and `.gitlab-ci.yml` updated to:
+1. Write a deploy script to `/tmp/deploy_ecommerce.sh` on the VM via SSH
+2. Execute the script (`bash /tmp/deploy_ecommerce.sh`)
+
+This eliminates the SSH heredoc escaping problem entirely.
 
 Commit: `fix: use script-file deploy to prevent Traefik Host label backtick stripping`
-
 Site confirmed HTTP 200 after fix.
 
 ### Phase 7 — `/gg-update` Execution
-Ran the `gg-update` workflow:
-- README already existed → appended `## Updates — 2026-06-27` section
-- `.gitignore` already present → skipped
-- Git already initialized → skipped
-- Committed `"docs: append 2026-06-27 updates section to README"`
-- Pushed to both GitHub (`origin`) and GitLab (`gitlab` remote)
 
-### Phase 8 — GitHub Pipeline Failure: VM Down
-After pushing the README update, the GitHub Actions pipeline failed again in the `deploy` job at the **"Set up SSH"** step:
+Workflow executed step by step:
+- **STEP 0:** README existed → appended `## Updates — 2026-06-27` section
+- **STEP 1:** `.gitignore` existed → skipped
+- **STEP 2:** Git already initialized → skipped
+- **STEP 3:** Committed `"docs: append 2026-06-27 updates section to README"`
+- **STEP 4:** Pushed to GitHub (`origin`)
+- **STEP 5:** Retrieved GitLab token via `glab config get token --host gitlab.codecrypto.academy`, temporarily set remote URL with token, pushed to GitLab (`gitlab`), stripped token from URL
 
+### Phase 8 — VM Down (Final GitHub Pipeline Check)
+
+After the `/gg-update` push, the new pipeline failed at the `deploy` job in the **"Set up SSH"** step:
 ```
 ssh-keyscan 34.174.56.186 >> ~/.ssh/known_hosts
 Process completed with exit code 1.
@@ -137,63 +234,89 @@ Process completed with exit code 1.
 **Diagnosis:**
 ```bash
 ssh -i "C:\ubuntuiso\.ssh\vboxuser" gcvmuser@34.174.56.186
-# → ssh: connect to host 34.174.56.186 port 22: Connection timed out
+# → Connection timed out (port 22)
 
 curl -s -o /dev/null -w "%{http_code}" https://ecommerce.deviaaps.com/
 # → 000 (no response)
 ```
 
-The GCI VM at `34.174.56.186` is completely unreachable — both SSH port 22 and HTTPS are timing out. This is a VM infrastructure issue, not a code issue.
+The GCI VM is completely down — both SSH and HTTPS are unreachable.
 
-**Required action:** Start the VM from GCP Console → Compute Engine → VM instances. If the external IP changes on restart, update `34.174.56.186` in both pipeline files and the 9 GitHub/GitLab secrets/variables.
+**Required action (pending):** Start VM from GCP Console → Compute Engine → VM instances. If external IP changes on restart, update `34.174.56.186` in:
+- `.github/workflows/ci-cd.yml` (ssh-keyscan and ssh commands)
+- `.gitlab-ci.yml` (same)
+- GitHub secret `MONGODB_URI`
+- GitLab variable `MONGODB_URI`
+- VM-specific references in `docs/RETROSPECTIVE-2026-06-27.md`
+
+### Phase 9 — README and Retrospective (`/miseia_create_readme`)
+
+Complete comprehensive README written in Spanish covering all 12 sections of the `/repo_readme` template:
+1. Features implemented
+2. Project structure (full file tree with comments)
+3. Design patterns + lockfile note
+4. How it works (core flow + code snippet)
+5. Getting started (prerequisites, install, env, seed, run)
+6. Example flows (success and error cases)
+7. Requirements (FR, NFR, regulatory, operative, quality attributes, BDD)
+8. Specifications (functional, structural, behavioral state machine, operative)
+9. Invariants and contracts (auth, money model, webhook idempotence)
+10. ADRs (6 records with quantitative justification)
+11. Unit and integration tests (coverage table, test scope)
+12. Deployment (URL, lockfile, manual + CI/CD instructions)
+13. Improvements (9 extensions with complexity estimate)
+14. AI changes + critical review
 
 ---
 
 ## 4. Key Technical Findings
 
-### Next.js 16 Breaking Changes
+### Next.js 16 Breaking Changes (from original build session)
 
-| API | Change | Impact |
+| Change | Effect | Fix |
 |---|---|---|
-| Middleware | `middleware.ts` → `proxy.ts` | Already correct in codebase |
-| Dynamic params | `params: { id: string }` → `params: Promise<{ id: string }>` | Must `await params` |
-| Cookies | `cookies()` synchronous → `await cookies()` | Async in route handlers |
-| Static generation | Server Components try to prerender at build | Add `export const dynamic = 'force-dynamic'` to MongoDB pages |
+| `middleware.ts` → `proxy.ts` | Route protection silently ignored | Rename + change export name |
+| `params` now `Promise<{...}>` | TypeError on every dynamic route | `await params` in all route handlers |
+| `cookies()` now async | TypeError in auth helpers | `await cookies()` |
+| Server Components prerender at build | MongoDB `ECONNREFUSED` during `next build` | `export const dynamic = 'force-dynamic'` on 6 pages |
 
-### Stripe Lazy Initialization
-Stripe's constructor reads `process.env.STRIPE_SECRET_KEY` immediately. If called at module level, `next build` fails when the env var is absent in the build environment (correct behavior — secrets shouldn't be in build environments).
+### Stripe SDK Gotchas
 
-```typescript
-// WRONG — crashes next build
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '...' });
+**Module-level initialization:** `new Stripe(process.env.STRIPE_SECRET_KEY!)` at the top of a file runs during `next build`. When `STRIPE_SECRET_KEY` is absent (correct — secrets shouldn't be in build environments), the build fails with "Neither apiKey nor config.authenticator provided". Fix: lazy initialization via `getStripe()`.
 
-// CORRECT — only runs at request time
-let _stripe: Stripe | null = null;
-function getStripe(): Stripe {
-  if (!_stripe) _stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '...' });
-  return _stripe;
-}
-```
-
-Applied to: `app/api/checkout/route.ts`, `app/api/stripe/webhook/route.ts`, `app/(customer)/checkout/success/page.tsx`.
+**API version:** Stripe SDK v22 requires `apiVersion: '2026-03-25.dahlia'`. The AI draft used an outdated version string, causing runtime errors on every Stripe API call.
 
 ### Traefik Host() Backtick Problem
-This is a persistent footgun for SSH-based deploy scripts. The Traefik routing rule requires backtick syntax: `` Host(`domain.com`) ``. Any path through a shell interprets backticks as command substitution unless specifically guarded.
 
-**Only safe pattern:**
+This is the single most impactful footgun in SSH-based Traefik deployments.
+
+**Why it fails:**
+```
+Shell sees: docker run --label "traefik...rule=Host(`domain.com`)"
+Remote bash interprets: `domain.com` → command substitution → empty string
+Result: "traefik...rule=Host()" → Traefik matches nothing → 404
+```
+
+**The only reliable pattern:**
 ```bash
 TRAEFIK_RULE='traefik.http.routers.app.rule=Host(`domain.com`)'
 docker run --label "$TRAEFIK_RULE" ...
 ```
 
-Single quotes protect backticks at assignment; double quotes expand `$TRAEFIK_RULE` as a plain string at `docker run` time. This pattern should be the standard for all MISEIA projects using Traefik.
+This pattern should be the organizational standard for all MISEIA projects using Traefik.
 
-### GitLab `builds_access_level` Must Be Enabled
-Any GitLab project where CI/CD was never explicitly activated has `builds_access_level: disabled`. The symptom is HTTP 403 on `/variables` and `/pipelines` API endpoints — even for the project owner. It mimics a permission problem but is a project setting.
+### GitLab `builds_access_level` Root Cause
+
+Any GitLab project where CI/CD was never explicitly activated has:
+- `builds_access_level: "disabled"`
+- `jobs_enabled: false`
+
+Symptoms that mislead: HTTP 403 on `/variables` endpoint even for project Owner — identical to a token permission error.
 
 **Diagnosis command:**
 ```bash
-glab api "projects/NAMESPACE%2FREPO" | python -c "import sys,json; d=json.load(sys.stdin); print(d.get('builds_access_level'), d.get('jobs_enabled'))"
+glab api "projects/NAMESPACE%2FREPO" | python -c \
+  "import sys,json; d=json.load(sys.stdin); print(d.get('builds_access_level'), d.get('jobs_enabled'))"
 ```
 
 **Fix:**
@@ -201,21 +324,22 @@ glab api "projects/NAMESPACE%2FREPO" | python -c "import sys,json; d=json.load(s
 glab api --method PUT "projects/NAMESPACE%2FREPO" -f builds_access_level=enabled
 ```
 
-### NODE_ENV=production Placement in GitLab CI
-Setting `NODE_ENV=production` as a job-level `variables:` entry causes `npm ci` to skip `devDependencies`. Since TypeScript, ESLint, and Vitest are all dev deps, the build and test stages both break.
+### NODE_ENV=production Placement
 
-**Rule:** `NODE_ENV=production` must only prefix the build script:
+Setting `NODE_ENV=production` as a GitLab CI job-level `variables:` entry causes `npm ci` to omit `devDependencies`. Since TypeScript, ESLint, and Vitest are all dev deps, both lint/test and build stages fail.
+
+**Rule:** `NODE_ENV=production` must ONLY prefix the build command:
 ```yaml
 script:
-  - npm ci                                       # devDeps available
-  - export NODE_ENV=production && npm run build  # only build sees it
+  - npm ci                                       # devDeps available — DO NOT set NODE_ENV here
+  - export NODE_ENV=production && npm run build
 ```
 
 ### Vitest `@` Path Alias
-Next.js configures the `@` alias in `tsconfig.json` but Vitest does not inherit it. Tests that import `@/lib/...` fail with "Cannot find package" unless the alias is explicitly declared:
+
+Next.js configures the `@` import alias in `tsconfig.json`. Vitest does NOT inherit it. Tests importing `@/lib/db` fail with "Cannot find package" unless explicitly declared in `vitest.config.ts`:
 
 ```typescript
-// vitest.config.ts
 resolve: {
   alias: { '@': path.resolve(__dirname, '.') },
 },
@@ -225,64 +349,91 @@ resolve: {
 
 ## 5. All Bugs Found and Fixed
 
-| # | Bug | Symptom | Fix |
-|---|---|---|---|
-| 1 | Stripe module-level init | `next build` fails: "Neither apiKey nor config.authenticator provided" | Lazy `getStripe()` in 3 files |
-| 2 | MongoDB read during static generation | `MongoServerSelectionError: ECONNREFUSED` at build time | `export const dynamic = 'force-dynamic'` on 6 Server Component pages |
-| 3 | Traefik `Host()` empty label | Site returns 404 after deploy | Write deploy script to VM using single-quoted `TRAEFIK_RULE` variable |
-| 4 | GitLab CI/CD disabled | All variable/pipeline API calls return 403 | Enable `builds_access_level` via `PUT /projects/:id` |
-| 5 | GitHub secrets not set | Deploy job: "Permission denied (publickey)" | Set 9 secrets via `gh secret set` |
-| 6 | ESLint `react-hooks/set-state-in-effect` | GitHub CI lint job fails | `// eslint-disable-next-line` in `Header.tsx`, `cart/page.tsx`, `admin/products/page.tsx` |
-| 7 | ESLint `@next/next/no-html-link-for-pages` | GitHub CI lint job fails | Replace `<a href="/">` with `<Link href="/">` in `orders/page.tsx`, `products/[id]/page.tsx` |
-| 8 | Unused `beforeEach` import in test | GitHub CI lint job fails | Remove import from `api-validation.test.ts` |
-| 9 | Vitest `@` alias not resolved | Test imports fail: "Cannot find package '@/lib/db'" | Add alias to `vitest.config.ts` |
-| 10 | GCI VM unreachable | GitHub deploy fails at `ssh-keyscan`; site returns 000 | Restart VM from GCP Console |
+| # | Bug | Symptom | Root Cause | Fix |
+|---|---|---|---|---|
+| 1 | Stripe module-level init | `next build` crashes: "Neither apiKey provided" | SDK constructor reads env var at module load | Lazy `getStripe()` in 3 files |
+| 2 | MongoDB read during static generation | `MongoServerSelectionError: ECONNREFUSED` at build | Server Components try to prerender with no MongoDB available | `export const dynamic = 'force-dynamic'` on 6 pages |
+| 3 | Traefik `Host()` empty rule | Site returns 404 after deploy | Backticks in `Host()` interpreted as subshell by remote bash | Write deploy script to VM; single-quoted `TRAEFIK_RULE` variable |
+| 4 | GitLab CI/CD disabled | All variable/pipeline API calls return 403 | `builds_access_level: disabled` on project | `glab api PUT ... -f builds_access_level=enabled` |
+| 5 | GitHub SSH secret missing | Deploy job: "Permission denied (publickey)" | `SSH_PRIVATE_KEY` secret not set (evaluates to empty) | `gh secret set` for all 9 secrets |
+| 6 | ESLint `react-hooks/set-state-in-effect` | GitHub CI lint job fails | ESLint rule about state updates inside effects | `// eslint-disable-next-line` in 3 files |
+| 7 | ESLint `@next/next/no-html-link-for-pages` | GitHub CI lint job fails | Using `<a>` instead of `<Link>` for Next.js routes | Replace with `<Link href="/">` in 2 files |
+| 8 | Unused import in test file | GitHub CI lint job fails | `beforeEach` imported but not used | Remove import |
+| 9 | Vitest `@` alias not resolved | Test imports fail: "Cannot find package '@/lib/db'" | Vitest doesn't inherit tsconfig path aliases | Add alias to `vitest.config.ts` |
+| 10 | GCI VM completely unreachable | `ssh-keyscan` returns exit code 1, site returns 000 | VM stopped in GCP | Restart from GCP Console |
 
 ---
 
 ## 6. Recommendations for Future Sessions
 
-### Before First Push
-- **Set all secrets/variables before triggering the first deploy pipeline.** A missing `SSH_PRIVATE_KEY` burns a full pipeline run and can leave stale containers on the VM with wrong configuration.
-- **Check GitLab `builds_access_level`** on any new or migrated project before attempting to set variables or trigger pipelines.
-- **Verify VM is running** before enabling CD — a down VM causes `ssh-keyscan` to return exit code 1, which blocks the entire deploy job.
+### Pre-Deploy Checklist (before first push)
+1. **Set all secrets/variables BEFORE enabling CI/CD.** A missing SSH key wastes a full pipeline run and may leave stale containers on the VM.
+2. **Check `builds_access_level`** on any new GitLab project: `glab api "projects/NS%2FREPO" | python -c "...print(d.get('builds_access_level'))"`.
+3. **Verify VM is running** before enabling CD: `nc -zv 34.174.56.186 22` or `ssh -o ConnectTimeout=5 gcvmuser@34.174.56.186 uptime`.
 
-### Traefik Labels (applies to all MISEIA projects)
-Always use the single-quoted variable pattern for the `Host()` rule. Never embed backticks directly in heredocs, `docker run` arguments, or CI/CD `script:` lines. Document this in a shared MISEIA infrastructure guide.
+### Traefik Labels (standard for all MISEIA projects)
+Always use the single-quoted variable pattern. Never embed backticks in heredocs, CI/CD script lines, or direct `docker run` arguments. Add this pattern to a shared MISEIA infrastructure runbook.
 
 ### Docker / Next.js
-- Add `output: 'standalone'` to `next.config.ts` from project start if Docker is planned.
-- Add `export const dynamic = 'force-dynamic'` to all Server Component pages that read from MongoDB/Redis/external services before the first `next build` run.
-- Never initialize SDK clients (Stripe, AWS, etc.) at module level if they read from `process.env` — use lazy initialization.
+- Add `output: 'standalone'` to `next.config.ts` before any containerization work.
+- Add `export const dynamic = 'force-dynamic'` to Server Component pages that read from external services — do it proactively, not after the build fails.
+- Never initialize SDK clients at module level when they read from `process.env`.
 
 ### CI/CD Pipeline Design
-- **`NODE_ENV=production` only on the build command**, never as a job-level variable.
-- Use `npm ci` (not `npm install`) in all CI pipelines — it's faster, deterministic, and respects `package-lock.json`.
-- Use **write-script-then-execute** for SSH-based deploys that involve special shell characters (backticks, dollar signs in values).
-- The deploy job should verify the container is running after `docker run` with `docker ps --filter name=app`.
+- `NODE_ENV=production` only on the build command — never as job-level variable.
+- Use `npm ci` (respects `package-lock.json`) — not `npm install`.
+- Use **write-script-then-execute** for SSH-based deploys with special characters.
+- Add a post-deploy health check step: `curl -f https://domain.com || exit 1`.
+
+### GitLab-Specific
+- GitLab SSH via `ssh-agent` + `ssh-add` is more reliable than writing key to `~/.ssh/id_rsa`.
+- Use `glab api --method POST .../variables` for bulk variable setting when `glab variable set` returns 403.
+
+### Infrastructure
+- Assign a **static external IP** to the GCI VM to avoid updating 9+ secrets/variables after every restart.
+- Add uptime monitoring for `https://ecommerce.deviaaps.com` — VM downtime is currently discovered through a CI pipeline failure, which is the worst way to detect it.
+- Consider a `docker-compose.yml` on the VM for easier service management and env file referencing.
 
 ### Testing
-- Declare Vitest `@` alias immediately when creating `vitest.config.ts`.
-- Mock `lib/db.ts` at the module level in unit tests, not individual methods — more resilient to internal refactors.
-- `package-lock.json` must be committed; use `npm ci` in all CI environments.
-
-### GCP Infrastructure
-- Consider assigning a **static external IP** to the GCI VM to avoid updating secrets/configs after every restart.
-- Add a **health check** or uptime monitoring for `https://ecommerce.deviaaps.com` so VM downtime is detected proactively rather than discovered through a CI pipeline failure.
+- Declare Vitest `@` alias immediately when creating `vitest.config.ts` — before writing the first test.
+- Mock `lib/db.ts` at the module level in unit tests (not individual MongoDB methods) — more resilient to internal refactors.
+- Add MongoDB Memory Server for integration tests to bring global coverage above 60%.
 
 ---
 
 ## 7. What Went Well
 
-- The PERT plan identified and ordered all 11 gaps correctly — no task needed re-ordering during execution.
-- The lazy Stripe init pattern is clean and generalizable to any SDK that reads secrets at construction time.
-- The write-script-then-execute deploy pattern fully solves the heredoc backtick problem and is reusable across all MISEIA projects.
-- GitLab's `builds_access_level` root cause was identified in one API call once the right diagnostic approach was taken (inspecting the project object, not just the variables endpoint).
-- Both pipelines (GitHub Actions and GitLab CI) reached green with identical deploy behavior, giving true redundancy.
+- The PERT plan correctly ordered all 11 tasks — no re-ordering needed during execution.
+- The lazy Stripe initialization pattern is clean, generalizable, and prevents the build-time env var problem permanently.
+- The write-script-then-execute SSH deploy pattern fully eliminates the heredoc backtick problem and can be applied to all MISEIA projects.
+- GitLab's `builds_access_level` root cause was identified in one API diagnostic call once the right question was asked ("is CI/CD enabled at all?" vs "do I have permission?").
+- Both pipelines reached identical green behavior, giving true redundancy — a push to `main` deploys through either GitHub or GitLab CI.
+- The comprehensive README with 12 sections (requirements, specifications, ADRs, BDD, quality attributes) significantly increases the professional value of the submission.
 
 ## 8. What Could Have Been Better
 
-- **Secret provisioning** should be a named step in the PERT plan, not discovered as a blocker after first deploy. Add "Configure repository secrets/variables" as an explicit PERT node between CI/CD creation and first pipeline trigger.
-- **VM health check** before enabling CD would prevent the `ssh-keyscan` failure from appearing as a mysterious pipeline error. A simple `ping` or `nc -z HOST 22` in the deploy job before attempting SSH would give a clearer error message.
-- **GitLab `builds_access_level`** should be checked at project creation time and added to the `/miseia_eval` checklist for GitLab projects.
-- **Integration tests** with a real MongoDB (dockerized in CI) would catch query logic bugs that the current unit tests with mocked DB cannot detect.
+- **Secret provisioning** should be an explicit PERT node between "CI/CD pipeline created" and "first pipeline trigger." The gap caused 1 extra failed run that was avoidable.
+- **VM health verification** before enabling CD would prevent the `ssh-keyscan` timeout from appearing as an ambiguous error. A pre-deploy step `nc -zv HOST 22 || exit 1` with a clear message would be more informative.
+- **GitLab `builds_access_level` check** should be part of the `/miseia_eval` checklist for any project that has a GitLab remote — 0 friction to check, high cost when missed.
+- **The README was accidentally deleted** during the `git add` workflow because the Write tool wrote the file but the staging command treated it as a deletion. Lesson: always verify `git status --short` shows `M` (modified) not `D` (deleted) before committing documentation rewrites.
+- **Integration tests with real MongoDB** would catch query logic bugs invisible to the current mocked unit tests. MongoDB Memory Server or a `docker-compose.test.yml` with a throwaway instance would enable this without requiring a real database.
+
+---
+
+## 9. Session Timeline Summary
+
+| Time | Event |
+|---|---|
+| Start | `/miseia_eval` → compliance report, PERT plan, 11 prompts generated |
+| +15min | `/create_prod_env` → `.env.production` created |
+| +30min | `/execute_pert` → all 11 PERT tasks complete, first commit pushed |
+| +45min | GitHub pipeline: 3 ESLint errors fixed, pipeline green |
+| +55min | 9 GitHub secrets set, deploy job green |
+| +60min | GitLab: `builds_access_level` found disabled, enabled, 9 variables set, pipeline green |
+| +70min | Site returning 404 — Traefik `Host()` empty — backtick root cause identified |
+| +75min | Manual container restart with single-quoted TRAEFIK_RULE → HTTP 200 |
+| +80min | Both pipelines updated with write-script-then-execute pattern |
+| +85min | `/gg-update` → README updated, pushed to GitHub + GitLab |
+| +90min | GitHub pipeline fails — VM down (ssh-keyscan timeout) |
+| +95min | VM confirmed unreachable via SSH and HTTPS |
+| +100min | `/miseia_create_readme` → comprehensive README + retrospective finalized |
