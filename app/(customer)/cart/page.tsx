@@ -31,6 +31,7 @@ export default function CartPage() {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchCart();
   }, []);
 

@@ -2,7 +2,7 @@
  * Unit tests for API route input validation logic.
  * Tests the validation rules that guard each route, using mocked DB.
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { NextRequest } from 'next/server';
 
 // Mock next/server for tests

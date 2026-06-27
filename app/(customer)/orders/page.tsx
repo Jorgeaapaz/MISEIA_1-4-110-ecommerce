@@ -1,4 +1,5 @@
 export const dynamic = 'force-dynamic';
+import Link from 'next/link';
 import { ObjectId } from 'mongodb';
 import { headers } from 'next/headers';
 import { getDb } from '@/lib/db';
@@ -42,7 +43,7 @@ export default async function OrdersPage() {
             <div className="text-6xl mb-6">📦</div>
             <h2 className="heading-3 mb-3">No orders yet</h2>
             <p className="body-sm mb-6">Start shopping to see your orders here.</p>
-            <a href="/" className="btn btn-primary no-underline">Browse Products</a>
+            <Link href="/" className="btn btn-primary no-underline">Browse Products</Link>
           </div>
         ) : (
           <div className="flex flex-col gap-4">

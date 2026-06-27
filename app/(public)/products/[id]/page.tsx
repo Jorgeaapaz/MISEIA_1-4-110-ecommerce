@@ -1,4 +1,5 @@
 export const dynamic = 'force-dynamic';
+import Link from 'next/link';
 import { ObjectId } from 'mongodb';
 import { getDb } from '@/lib/db';
 import { Product } from '@/lib/types';
@@ -50,7 +51,7 @@ export default async function ProductDetailPage({
           <div className="text-center">
             <h1 className="heading-2 mb-4">Product Not Found</h1>
             <p className="body-lg mb-6">The product you are looking for does not exist.</p>
-            <a href="/" className="btn btn-primary">Back to Store</a>
+            <Link href="/" className="btn btn-primary">Back to Store</Link>
           </div>
         </main>
       </>
@@ -61,13 +62,13 @@ export default async function ProductDetailPage({
     <>
       <Header />
       <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <a
+        <Link
           href="/"
           className="inline-flex items-center gap-2 body-sm no-underline mb-8"
           style={{ color: 'var(--accent-600)' }}
         >
           ← Back to catalog
-        </a>
+        </Link>
 
         <div className="grid md:grid-cols-2 gap-12 animate-fade-in">
           {/* Product image placeholder */}
