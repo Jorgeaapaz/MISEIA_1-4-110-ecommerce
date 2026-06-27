@@ -4,8 +4,13 @@ import Stripe from 'stripe';
 import { getDb } from '@/lib/db';
 import { Order } from '@/lib/types';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', { apiVersion: '2026-03-25.dahlia' });
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || '';
+let _stripe: Stripe | null = null;
+function getStripe(): Stripe {
+  if (!_stripe) {
+    _stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-03-25.dahlia' });
+  }
+  return _stripe;
+}
 
 export async function POST(request: NextRequest) {
   const body = await request.text();
@@ -17,7 +22,7 @@ export async function POST(request: NextRequest) {
 
   let event: Stripe.Event;
   try {
-    event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+    event = getStripe().webhooks.constructEvent(body, signature, process.env.STRIPE_WEBHOOK_SECRET || '');
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';
     return Response.json({ error: `Webhook verification failed: ${message}` }, { status: 400 });

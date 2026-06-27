@@ -4,7 +4,14 @@ import Stripe from 'stripe';
 import { getDb } from '@/lib/db';
 import { Cart } from '@/lib/types';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', { apiVersion: '2026-03-25.dahlia' });
+// Lazy init — avoids module-load failure when env var is absent (e.g. during next build)
+let _stripe: Stripe | null = null;
+function getStripe(): Stripe {
+  if (!_stripe) {
+    _stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-03-25.dahlia' });
+  }
+  return _stripe;
+}
 
 export async function POST(request: NextRequest) {
   const userId = request.headers.get('x-user-id');
@@ -35,7 +42,7 @@ export async function POST(request: NextRequest) {
   const orderId = orderResult.insertedId.toString();
 
   // Create Stripe Checkout session
-  const session = await stripe.checkout.sessions.create({
+  const session = await getStripe().checkout.sessions.create({
     payment_method_types: ['card'],
     line_items: cart.items.map((item) => ({
       price_data: {

@@ -4,14 +4,15 @@ import { ObjectId } from 'mongodb';
 import Header from '@/app/components/Header';
 import { getDb } from '@/lib/db';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2026-03-25.dahlia',
-});
+// Lazy init — avoids module-load failure when env var is absent during next build
+function getStripe(): Stripe {
+  return new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-03-25.dahlia' });
+}
 
 async function fulfillOrder(sessionId: string): Promise<void> {
   let session: Stripe.Checkout.Session;
   try {
-    session = await stripe.checkout.sessions.retrieve(sessionId);
+    session = await getStripe().checkout.sessions.retrieve(sessionId);
   } catch {
     return;
   }
