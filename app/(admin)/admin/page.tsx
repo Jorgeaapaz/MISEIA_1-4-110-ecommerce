@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { getDb } from '@/lib/db';
 import { Order, Product, User } from '@/lib/types';
 

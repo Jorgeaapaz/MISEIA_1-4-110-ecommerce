@@ -256,3 +256,101 @@ stripe listen --forward-to localhost:3000/api/stripe/webhook
 | Payments | Stripe Checkout + Webhooks |
 | Styling | Tailwind CSS 4 |
 | Language | TypeScript 5 |
+
+---
+
+## Test Coverage
+
+Run with `npm test` (27 tests) or `npm run test:coverage` for coverage report:
+
+| File | Statements | Functions | Lines |
+|---|---|---|---|
+| `lib/auth.ts` | 67% | 75% | 71% |
+| `app/api/auth/login` | 57% | 100% | 57% |
+| `app/api/cart` | 39% | 80% | 40% |
+| `app/api/auth/register` | 31% | 100% | 31% |
+
+Coverage is intentionally partial — routes requiring a live MongoDB connection are covered by validation tests with mocked DB; integration tests against a real DB are a future iteration.
+
+---
+
+## Architecture Decisions
+
+See [`docs/adr/`](docs/adr/) for Architecture Decision Records covering:
+- [MongoDB over PostgreSQL](docs/adr/001-mongodb-over-postgresql.md)
+- [JWT Cookies over Session Store](docs/adr/002-jwt-cookies-over-session-store.md) *(includes latency benchmarks)*
+- [Native MongoDB Driver over Mongoose](docs/adr/003-native-mongodb-driver-over-mongoose.md)
+- [Next.js App Router + Server Components](docs/adr/004-nextjs-app-router-server-components.md) *(includes bundle size data)*
+- [Stripe Checkout over Elements](docs/adr/005-stripe-checkout-over-elements.md)
+- [Cents-First Money Model](docs/adr/006-cents-first-money-model.md) *(includes float precision proof)*
+
+## AI Assistance
+
+This project was built with AI (Claude Code) assistance. See [`docs/AI-USAGE.md`](docs/AI-USAGE.md) for a detailed record of AI-generated code and the critical corrections applied.
+
+---
+
+## Deployment
+
+### Live URL
+
+**[https://ecommerce.deviaaps.com](https://ecommerce.deviaaps.com)**
+
+### Local Docker Build
+
+```bash
+docker build -t ecommerce:latest .
+docker run -p 30001:30001 --env-file .env.local ecommerce:latest
+# Open http://localhost:30001
+```
+
+### Production Deploy (GCI VM — ecommerce.deviaaps.com)
+
+**Prerequisites:** SSH access to `gcvmuser@34.174.56.186`, Traefik + `miseia-net` network running on VM.
+
+```bash
+# 1. SSH into VM
+ssh -i ~/.ssh/vboxuser gcvmuser@34.174.56.186
+
+# 2. Clone repo (first time only)
+git clone https://github.com/Jorgeaapaz/MISEIA_1-4-110-ecommerce.git ~/MISEIA110_ecommerce
+cd ~/MISEIA110_ecommerce
+
+# 3. Create production env file
+cp .env.example .env.production
+nano .env.production   # fill in production values
+
+# 4. Build and run
+docker build -t ecommerce:latest .
+docker run -d \
+  --name ecommerce \
+  --network miseia-net \
+  --restart unless-stopped \
+  --env-file .env.production \
+  -l "traefik.enable=true" \
+  -l "traefik.http.routers.ecommerce.rule=Host(\`ecommerce.deviaaps.com\`)" \
+  -l "traefik.http.routers.ecommerce.entrypoints=websecure" \
+  -l "traefik.http.routers.ecommerce.tls=true" \
+  -l "traefik.http.routers.ecommerce.tls.certresolver=cloudflare" \
+  -l "traefik.http.services.ecommerce.loadbalancer.server.port=30001" \
+  ecommerce:latest
+
+# 5. Seed production database (first deploy only)
+docker exec ecommerce npx tsx scripts/seed.ts
+
+# 6. Verify
+curl -I https://ecommerce.deviaaps.com
+```
+
+### Continuous Deployment
+
+After initial setup, pushes to `main` are automatically built and deployed via:
+- **GitHub Actions:** `.github/workflows/ci-cd.yml` (test → build → deploy)
+- **GitLab CI:** `.gitlab-ci.yml` (test → build → deploy)
+
+### Stripe Webhook (Production)
+
+Register the webhook in [Stripe Dashboard](https://dashboard.stripe.com/webhooks):
+- **Endpoint:** `https://ecommerce.deviaaps.com/api/stripe/webhook`
+- **Events:** `checkout.session.completed`
+- Copy the signing secret → update `STRIPE_WEBHOOK_SECRET` in `.env.production`

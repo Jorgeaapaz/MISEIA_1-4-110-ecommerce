@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import Link from 'next/link';
 import { getDb } from '@/lib/db';
 import { Product } from '@/lib/types';

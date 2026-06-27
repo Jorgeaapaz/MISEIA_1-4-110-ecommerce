@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import Link from 'next/link';
 import Stripe from 'stripe';
 import { ObjectId } from 'mongodb';
